@@ -1,22 +1,24 @@
 #include <SPI.h>
 #include <WiFi101.h>
 
-//Wifi Connection 
+//Wifi Connection
 char ssid[] = "NathanE" ;
-char pass[] = "Arduino1" ; 
+char pass[] = "Arduino1" ;
 int status = WL_IDLE_STATUS;
-IPAddress server(192,168,0,101) ;
+IPAddress server(192, 168, 0, 101) ;
 WiFiClient client;
 
 //Sensor and Time Data
-unsigned long timestamp [500] ;  
-float voltage [500];
-int interval = 5 ; 
-int previousTime = 0 ; 
-string message = string("string");  
-float sensorToVoltage = (1.0/(7.5/(7.5+30.0))*(3.3/4095.0) ; 
+unsigned long timestamp [200] ;
+float voltage [200];
+int interval = 5 ;
+unsigned long previousTime = 0 ;
+unsigned long currentTime = 0 ;
+String message ;
+float sensorToVoltage = (1.0 / (7.5 / (7.5 + 30.0)) * (3.3 / 4095.0)) ;
 
-void setup() 
+
+void setup()
 {
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
@@ -60,61 +62,64 @@ void setup()
 void loop()
 {
   //Read the sensors locally
-  read_sensors() ; 
-  
+  read_sensors() ;
+
   //Create packets and send to server db
   Sending_To_phpmyadmindatabase();
-  
+
   //Time delay of 30 seconds
   delay(30000); // interval
 }
-                         
+
 void read_sensors()
 {
-   for (int i = 0 ; i < 500;)
-   {
-     if( timestamp - previousTime >= interval)
-     {
-       timestamp(i) = millis() ;
-       voltage(i) = analogRead(A0) ;
-       i = i + 1 ; 
-     }
-   }
+  for (int i = 0 ; i < 500;)
+  {
+    currentTime = millis() ;
+    if (currentTime - previousTime >= interval)
+    {
+      timestamp[i] = currentTime ;
+      voltage[i] = analogRead(A0) ;
+      previousTime = currentTime ;
+      i = i + 1 ;
+    }
+  }
 }
-                         
+
 
 
 void Sending_To_phpmyadmindatabase()   //CONNECTING WITH MYSQL
 {
-  if (client.connect(server, 80)) 
+
+  if (client.connect(server, 80))
   {
-    for(int i  = 0 ; i < 500 ; i++)
-     {
-     voltage(i) = voltage(i)*sensorToVoltage ; 
-     message = "GET /testcode/dht.php?temperature=" + String(voltage(i),4)) + ("&humidity=") + String(timestamp(i))
-                  + " HTTP/1.1\r\n" + ("Host: 192.168.0.101\r\n") + ("Connection: close\r\n\r\n") ;
-     client.print(message) ; 
-     }
-   
-     //Serial.println("connected");
-     // Make a HTTP request:
-     //Serial.print("GET /testcode/dht.php?temperature=");
-     //client.print("GET /testcode/dht.php?temperature=");     //YOUR URL
-     //Serial.print(temperatureData);
-     //client.print(temperatureData);
-     //client.print("&humidity=");
-     //Serial.print("&humidity=");
-     //client.print(humidityData);
-     //Serial.println(humidityData);
-     //client.print(" ");      //SPACE BEFORE HTTP/1.1
-     //client.print("HTTP/1.1");
-     //client.println();
-     //client.println("Host: 192.168.0.101");
-     //client.println("Connection: close");
-     //client.println(); 
+    for (int i  = 0 ; i < 500 ; i++)
+    {
+      voltage[i] = voltage[i] * sensorToVoltage ;
+      message = "GET /testcode/dht.php?temperature=" + String(voltage[i], 4) + "&humidity=" + String(timestamp[i])
+                + " HTTP/1.1\r\n" + ("Host: 192.168.0.101\r\n") + ("Connection: close\r\n\r\n") ;
+      client.print(message) ;
     }
 
-    
+    //Serial.println("connected");
+    // Make a HTTP request:
+    //Serial.print("GET /testcode/dht.php?temperature=");
+    //client.print("GET /testcode/dht.php?temperature=");     //YOUR URL
+    //Serial.print(temperatureData);
+    //client.print(temperatureData);
+    //client.print("&humidity=");
+    //Serial.print("&humidity=");
+    //client.print(humidityData);
+    //Serial.println(humidityData);
+    //client.print(" ");      //SPACE BEFORE HTTP/1.1
+    //client.print("HTTP/1.1");
+    //client.println();
+    //client.println("Host: 192.168.0.101");
+    //client.println("Connection: close");
+    //client.println();
+  }
+
+
   else
   {
     // if you didn't get a connection to the server:
@@ -122,7 +127,7 @@ void Sending_To_phpmyadmindatabase()   //CONNECTING WITH MYSQL
   }
 }
 
- 
+
 void printWiFiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
@@ -139,4 +144,3 @@ void printWiFiStatus() {
   Serial.print(rssi);
   Serial.println(" dBm");
 }
-  
